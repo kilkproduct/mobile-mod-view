@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "id": "com.thescriptshowcaser.mobilemodview",
+  "name": "Mobile Mod View",
+  "description": "A mobile-friendly moderator view for Discord user profiles.",
+  "author": "kilk",
+  "version": "1.0.0",
+  "dependencies": {
+    "revenge.api": {
+      "version": ">=1 <2"
+    },
+    "discord": {
+      "version": "*"
+    }
+  },
+  "dist": {
+    "script": "index.js"
+  }
+}
