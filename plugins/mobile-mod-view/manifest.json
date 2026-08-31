@@ -1,0 +1,13 @@
+{
+  "name": "Mobile Mod View",
+  "description": "Mobile-friendly moderator information and tools for Discord user profiles.",
+  "authors": [
+    {
+      "name": "kilk"
+    }
+  ],
+  "main": "index.js",
+  "vendetta": {
+    "icon": "ic_badge_staff"
+  }
+}
