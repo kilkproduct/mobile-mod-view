@@ -1,0 +1,8 @@
+{
+  "name": "mobile-mod-view",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}
