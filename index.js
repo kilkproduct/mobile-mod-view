@@ -17,7 +17,6 @@
     const Text = RN.Text;
     const Pressable = RN.Pressable || RN.TouchableOpacity;
     const StyleSheet = RN.StyleSheet;
-    const Image = RN.Image;
     const ActivityIndicator = RN.ActivityIndicator;
 
     const disposers = [];
@@ -33,60 +32,18 @@
     const styles = StyleSheet.create({
         wrapper: {
             width: "100%",
-            height: 90,
-            alignItems: "center",
-            position: "relative",
-            overflow: "visible",
-            zIndex: 20
+            alignItems: "center"
         },
 
         card: {
-            position: "absolute",
-            top: 124,
-            left: 6,
-            right: 6,
-            width: "auto",
+            width: "100%",
+            marginTop: 10,
             marginBottom: 2,
             backgroundColor: COLORS.surface,
             borderRadius: 12,
             borderWidth: 1,
             borderColor: COLORS.border,
-            overflow: "hidden",
-            elevation: 20
-
-        },
-
-        profileHeader: {
-            paddingHorizontal: 14,
-            paddingTop: 13,
-            paddingBottom: 12,
-            flexDirection: "row",
-            alignItems: "center"
-        },
-
-        profileAvatar: {
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            backgroundColor: COLORS.surface2,
-            marginRight: 11
-        },
-
-        profileNameGroup: {
-            flex: 1,
-            minWidth: 0
-        },
-
-        profileName: {
-            color: COLORS.text,
-            fontSize: 16,
-            fontWeight: "800"
-        },
-
-        profileUsername: {
-            color: COLORS.muted,
-            fontSize: 12,
-            marginTop: 3
+            overflow: "hidden"
         },
 
         title: {
@@ -261,23 +218,6 @@
         }
 
         toast("Clipboard unavailable");
-    }
-
-    function getAvatarUrl(user) {
-        if (!user?.id || !user?.avatar) return null;
-
-        const hash = String(user.avatar);
-        const extension = hash.startsWith("a_") ? "gif" : "png";
-
-        return (
-            "https://cdn.discordapp.com/avatars/" +
-            user.id +
-            "/" +
-            hash +
-            "." +
-            extension +
-            "?size=128"
-        );
     }
 
     function formatDate(value) {
@@ -572,44 +512,6 @@
                 "Member Information"
             ),
 
-            React.createElement(
-                View,
-                { style: styles.profileHeader },
-                getAvatarUrl(user)
-                    ? React.createElement(Image, {
-                          source: { uri: getAvatarUrl(user) },
-                          style: styles.profileAvatar
-                      })
-                    : React.createElement(View, { style: styles.profileAvatar }),
-
-                React.createElement(
-                    View,
-                    { style: styles.profileNameGroup },
-
-                    React.createElement(
-                        Text,
-                        {
-                            style: styles.profileName,
-                            numberOfLines: 1
-                        },
-                        user?.global_name ||
-                            user?.username ||
-                            "Unknown User"
-                    ),
-
-                    React.createElement(
-                        Text,
-                        {
-                            style: styles.profileUsername,
-                            numberOfLines: 1
-                        },
-                        user?.username
-                            ? "@" + user.username
-                            : "Unknown"
-                    )
-                )
-            ),
-
             React.createElement(View, {
                 style: styles.divider
             }),
@@ -833,9 +735,10 @@
                         return React.createElement(
                             View,
                             {
-                                style: styles.wrapper,
-                                pointerEvents: "box-none"
+                                style: styles.wrapper
                             },
+
+                            result,
 
                             React.createElement(
                                 MemberInformation,
