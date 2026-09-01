@@ -5,12 +5,30 @@
     // Keep all potentially fragile API lookups lazy so a missing Discord
     // module cannot prevent the plugin from loading.
 
-    const React = c?.React || null;
-    const RN = c?.ReactNative || null;
-
+    // In Vendetta/Bunny, React and ReactNative are exposed by
+    // vendetta.metro.common. Older versions/contexts may also expose React
+    // on window, so keep a safe fallback.
     const metro = m || {};
     const patcher = q || {};
     const userInterface = ui || {};
+
+    const common =
+        c ||
+        metro.common ||
+        (typeof vendetta !== "undefined"
+            ? vendetta?.metro?.common
+            : null) ||
+        {};
+
+    const React =
+        common.React ||
+        (typeof window !== "undefined"
+            ? window.React
+            : null);
+
+    const RN =
+        common.ReactNative ||
+        {};
 
     const findByName = metro.findByName;
     const findByProps = metro.findByProps;
@@ -540,7 +558,6 @@
 
         async function refresh() {
             if (refreshing) return;
-
             setRefreshing(true);
             await load();
             setRefreshing(false);
@@ -549,7 +566,6 @@
         return React.createElement(
             View,
             { style: styles.modalRoot },
-
             React.createElement(
                 View,
                 { style: styles.modalCard },
@@ -557,7 +573,6 @@
                 React.createElement(
                     View,
                     { style: styles.modalHeader },
-
                     React.createElement(
                         Text,
                         {
@@ -566,14 +581,12 @@
                         },
                         "Mobile Mod View"
                     ),
-
                     React.createElement(
                         Pressable,
                         {
                             onPress: onClose,
                             accessibilityRole: "button",
-                            accessibilityLabel:
-                                "Close Mod View"
+                            accessibilityLabel: "Close Mod View"
                         },
                         React.createElement(
                             Text,
@@ -726,10 +739,9 @@
                             InfoRow,
                             {
                                 label: "Joined Server",
-                                value:
-                                    formatDate(
-                                        member?.joined_at
-                                    )
+                                value: formatDate(
+                                    member?.joined_at
+                                )
                             }
                         )
                     ),
@@ -750,7 +762,6 @@
                                       style:
                                           styles.roleWrap
                                   },
-
                                   memberRoles.map(
                                       roleId => {
                                           const role =
@@ -770,7 +781,6 @@
                                                   style:
                                                       styles.role
                                               },
-
                                               React.createElement(
                                                   Text,
                                                   {
@@ -816,7 +826,6 @@
                                               style:
                                                   styles.message
                                           },
-
                                           React.createElement(
                                               Text,
                                               {
@@ -827,7 +836,6 @@
                                                   message.timestamp
                                               )
                                           ),
-
                                           React.createElement(
                                               Text,
                                               {
@@ -894,17 +902,12 @@
                     loading
                         ? React.createElement(
                               View,
-                              {
-                                  style:
-                                      styles.loading
-                              },
-
+                              { style: styles.loading },
                               ActivityIndicator
                                   ? React.createElement(
                                         ActivityIndicator
                                     )
                                   : null,
-
                               React.createElement(
                                   Text,
                                   {
@@ -923,7 +926,6 @@
                             onPress: refresh,
                             disabled: refreshing
                         },
-
                         React.createElement(
                             Text,
                             {
@@ -957,13 +959,11 @@
                 Pressable,
                 {
                     style: styles.profileButton,
-                    onPress: () =>
-                        setVisible(true),
+                    onPress: () => setVisible(true),
                     accessibilityRole: "button",
                     accessibilityLabel:
                         "Open Mobile Mod View"
                 },
-
                 React.createElement(
                     Text,
                     {
@@ -984,7 +984,6 @@
                           onRequestClose: () =>
                               setVisible(false)
                       },
-
                       React.createElement(
                           ModView,
                           {
@@ -1011,10 +1010,7 @@
 
         try {
             HeaderAvatar =
-                findByName(
-                    "HeaderAvatar",
-                    false
-                );
+                findByName("HeaderAvatar", false);
         } catch (error) {
             console.error(
                 "[Mobile Mod View] HeaderAvatar lookup",
@@ -1051,9 +1047,7 @@
                                     width: "100%"
                                 }
                             },
-
                             result,
-
                             React.createElement(
                                 ModButton,
                                 {
@@ -1068,7 +1062,6 @@
                             "[Mobile Mod View] render patch",
                             error
                         );
-
                         return result;
                     }
                 }
@@ -1111,7 +1104,6 @@
                 "[Mobile Mod View] start",
                 error
             );
-
             showToast(
                 "Mobile Mod View failed to start"
             );
@@ -1154,6 +1146,6 @@
     {},
     vendetta.metro,
     vendetta.patcher,
-    vendetta.common,
+    vendetta.metro.common,
     vendetta.ui
 );
