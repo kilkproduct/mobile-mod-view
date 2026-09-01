@@ -1,255 +1,196 @@
 (function (p, m, q, c, ui) {
     "use strict";
 
-    // Bunny still supports the legacy Vendetta plugin API.
-    // Keep all potentially fragile API lookups lazy so a missing Discord
-    // module cannot prevent the plugin from loading.
+    const React = c.React;
+    const RN = c.ReactNative;
 
-    // In Vendetta/Bunny, React and ReactNative are exposed by
-    // vendetta.metro.common. Older versions/contexts may also expose React
-    // on window, so keep a safe fallback.
-    const metro = m || {};
-    const patcher = q || {};
-    const userInterface = ui || {};
+    const findByName = m.findByName;
+    const findByProps = m.findByProps;
+    const findByStoreName = m.findByStoreName;
+    const after = q.after;
 
-    const common =
-        c ||
-        metro.common ||
-        (typeof vendetta !== "undefined"
-            ? vendetta?.metro?.common
-            : null) ||
-        {};
+    const View = RN.View;
+    const Text = RN.Text;
+    const ScrollView = RN.ScrollView;
+    const Image = RN.Image;
+    const StyleSheet = RN.StyleSheet;
+    const ActivityIndicator = RN.ActivityIndicator;
 
-    const React =
-        common.React ||
-        (typeof window !== "undefined"
-            ? window.React
-            : null);
-
-    const RN =
-        common.ReactNative ||
-        {};
-
-    const findByName = metro.findByName;
-    const findByProps = metro.findByProps;
-    const findByStoreName = metro.findByStoreName;
-
-    const after = patcher.after;
-
-    const toast =
-        typeof userInterface?.toasts?.showToast === "function"
-            ? userInterface.toasts.showToast
-            : null;
-
-    if (!React || !RN) {
-        console.error("[Mobile Mod View] React API unavailable");
-    }
-
-    const View = RN?.View;
-    const Text = RN?.Text;
-    const Pressable = RN?.Pressable || RN?.TouchableOpacity;
-    const ScrollView = RN?.ScrollView;
-    const Image = RN?.Image;
-    const Modal = RN?.Modal;
-    const StyleSheet = RN?.StyleSheet;
-    const ActivityIndicator = RN?.ActivityIndicator;
-
+    const showToast = ui?.toasts?.showToast;
     const disposers = [];
 
-    const styles = StyleSheet?.create?.({
-        modalRoot: {
-            flex: 1,
-            justifyContent: "center",
-            backgroundColor: "rgba(0, 0, 0, 0.55)"
+    const COLORS = {
+        surface: "#1e1f22",
+        surfaceAlt: "#2b2d31",
+        border: "#3f4147",
+        text: "#f2f3f5",
+        muted: "#b5bac1",
+        green: "#23a559"
+    };
+
+    const styles = StyleSheet.create({
+        container: {
+            width: "100%",
+            marginTop: 10,
+            paddingHorizontal: 12
         },
-        modalCard: {
-            marginHorizontal: 14,
-            maxHeight: "88%",
-            backgroundColor: "#111214",
-            borderRadius: 14,
-            overflow: "hidden"
+        card: {
+            backgroundColor: COLORS.surface,
+            borderRadius: 12,
+            overflow: "hidden",
+            borderWidth: 1,
+            borderColor: COLORS.border
         },
-        modalHeader: {
-            minHeight: 54,
-            paddingHorizontal: 16,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            borderBottomWidth: 1,
-            borderBottomColor: "#3f4147"
-        },
-        modalTitle: {
-            flex: 1,
-            color: "#f2f3f5",
-            fontSize: 18,
-            fontWeight: "700"
-        },
-        closeText: {
-            color: "#b5bac1",
-            fontSize: 14,
-            fontWeight: "700",
-            paddingLeft: 12
-        },
-        content: {
-            padding: 15,
-            paddingBottom: 28
-        },
-        header: {
-            alignItems: "center",
-            paddingVertical: 8
-        },
-        avatar: {
-            width: 78,
-            height: 78,
-            borderRadius: 39,
-            backgroundColor: "#2b2d31",
-            marginBottom: 9
-        },
-        name: {
-            color: "#f2f3f5",
-            fontSize: 20,
-            fontWeight: "700"
-        },
-        username: {
-            color: "#b5bac1",
-            fontSize: 14,
-            marginTop: 3
-        },
-        section: {
-            marginTop: 11,
-            backgroundColor: "#1e1f22",
-            borderRadius: 10,
-            overflow: "hidden"
-        },
-        sectionHeader: {
+        cardHeader: {
             minHeight: 48,
             paddingHorizontal: 14,
             flexDirection: "row",
             alignItems: "center",
-            justifyContent: "space-between"
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.border
+        },
+        cardTitle: {
+            flex: 1,
+            color: COLORS.text,
+            fontSize: 15,
+            fontWeight: "800"
+        },
+        liveDot: {
+            width: 7,
+            height: 7,
+            borderRadius: 4,
+            backgroundColor: COLORS.green,
+            marginRight: 6
+        },
+        liveText: {
+            color: COLORS.muted,
+            fontSize: 10,
+            fontWeight: "800"
+        },
+        profile: {
+            padding: 14,
+            flexDirection: "row",
+            alignItems: "center"
+        },
+        profileAvatar: {
+            width: 54,
+            height: 54,
+            borderRadius: 27,
+            backgroundColor: COLORS.surfaceAlt,
+            marginRight: 12
+        },
+        profileText: {
+            flex: 1
+        },
+        displayName: {
+            color: COLORS.text,
+            fontSize: 18,
+            fontWeight: "800"
+        },
+        username: {
+            color: COLORS.muted,
+            fontSize: 13,
+            marginTop: 2
+        },
+        section: {
+            borderTopWidth: 1,
+            borderTopColor: COLORS.border
         },
         sectionTitle: {
-            color: "#f2f3f5",
-            fontSize: 15,
-            fontWeight: "700"
-        },
-        sectionArrow: {
-            color: "#b5bac1",
-            fontSize: 17
-        },
-        sectionBody: {
-            padding: 13,
-            borderTopWidth: 1,
-            borderTopColor: "#3f4147"
+            color: COLORS.text,
+            fontSize: 12,
+            fontWeight: "800",
+            paddingHorizontal: 14,
+            paddingTop: 12,
+            paddingBottom: 5
         },
         row: {
+            minHeight: 32,
+            paddingHorizontal: 14,
+            paddingVertical: 6,
             flexDirection: "row",
-            paddingVertical: 6
+            alignItems: "center"
         },
         label: {
             flex: 1,
-            color: "#b5bac1",
-            fontSize: 13
+            color: COLORS.muted,
+            fontSize: 12
         },
         value: {
             flex: 1.7,
-            color: "#f2f3f5",
-            fontSize: 13,
+            color: COLORS.text,
+            fontSize: 12,
             fontWeight: "600",
             textAlign: "right"
         },
-        roleWrap: {
-            flexDirection: "row",
-            flexWrap: "wrap"
+        roleList: {
+            paddingHorizontal: 14,
+            paddingBottom: 12
         },
         role: {
-            backgroundColor: "#2b2d31",
-            borderRadius: 6,
-            paddingHorizontal: 8,
-            paddingVertical: 6,
-            marginRight: 6,
-            marginBottom: 6
+            backgroundColor: COLORS.surfaceAlt,
+            borderWidth: 1,
+            borderColor: COLORS.border,
+            borderRadius: 8,
+            padding: 9,
+            marginTop: 7
         },
-        roleText: {
-            color: "#f2f3f5",
+        roleName: {
+            color: COLORS.text,
             fontSize: 12,
-            fontWeight: "600"
+            fontWeight: "700"
+        },
+        roleId: {
+            color: COLORS.muted,
+            fontSize: 10,
+            marginTop: 3
+        },
+        messageList: {
+            paddingHorizontal: 14,
+            paddingBottom: 12
         },
         message: {
-            paddingVertical: 9,
-            borderBottomWidth: 1,
-            borderBottomColor: "#3f4147"
+            backgroundColor: COLORS.surfaceAlt,
+            borderWidth: 1,
+            borderColor: COLORS.border,
+            borderRadius: 8,
+            padding: 9,
+            marginTop: 7
         },
         messageDate: {
-            color: "#b5bac1",
+            color: COLORS.muted,
             fontSize: 10,
             marginBottom: 4
         },
         messageText: {
-            color: "#f2f3f5",
-            fontSize: 13,
-            lineHeight: 19
+            color: COLORS.text,
+            fontSize: 12,
+            lineHeight: 18
         },
         empty: {
-            color: "#b5bac1",
+            color: COLORS.muted,
+            fontSize: 12,
             textAlign: "center",
-            paddingVertical: 10,
-            lineHeight: 19
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            lineHeight: 18
         },
         loading: {
-            alignItems: "center",
-            paddingVertical: 15
-        },
-        profileButton: {
-            marginTop: 8,
-            marginHorizontal: 10,
-            minHeight: 40,
-            borderRadius: 8,
-            backgroundColor: "#2b2d31",
-            borderWidth: 1,
-            borderColor: "#3f4147",
-            alignItems: "center",
-            justifyContent: "center",
-            paddingHorizontal: 12
-        },
-        profileButtonText: {
-            color: "#f2f3f5",
-            fontSize: 14,
-            fontWeight: "700"
-        },
-        refresh: {
-            marginTop: 12,
-            minHeight: 42,
-            borderRadius: 8,
-            backgroundColor: "#2b2d31",
-            alignItems: "center",
-            justifyContent: "center"
-        },
-        refreshText: {
-            color: "#f2f3f5",
-            fontSize: 14,
-            fontWeight: "700"
+            paddingVertical: 12,
+            alignItems: "center"
         }
     });
 
-    function showToast(message) {
+    function toast(message) {
         try {
-            if (toast) {
-                toast(message);
+            if (typeof showToast === "function") {
+                showToast(message);
             } else {
                 console.log("[Mobile Mod View]", message);
             }
         } catch (error) {
             console.error("[Mobile Mod View] toast", error);
         }
-    }
-
-    function safeName(user) {
-        return (
-            user?.global_name ||
-            user?.username ||
-            "Unknown User"
-        );
     }
 
     function formatDate(value) {
@@ -264,27 +205,25 @@
         }
     }
 
-    function accountCreated(id) {
+    function getAccountCreated(id) {
         if (!id) return "Unknown";
 
         try {
-            const milliseconds =
+            const timestamp =
                 Number((BigInt(String(id)) >> 22n)) +
                 1420070400000;
 
-            return formatDate(milliseconds);
+            return formatDate(timestamp);
         } catch {
             return "Unknown";
         }
     }
 
-    function avatarUrl(user) {
+    function getAvatarUrl(user) {
         if (!user?.id || !user?.avatar) return null;
 
         const hash = String(user.avatar);
-        const extension = hash.startsWith("a_")
-            ? "gif"
-            : "png";
+        const extension = hash.startsWith("a_") ? "gif" : "png";
 
         return (
             "https://cdn.discordapp.com/avatars/" +
@@ -293,12 +232,12 @@
             hash +
             "." +
             extension +
-            "?size=256"
+            "?size=128"
         );
     }
 
-    function getGuildId(providedGuildId) {
-        if (providedGuildId) return providedGuildId;
+    function getGuildId(provided) {
+        if (provided) return provided;
 
         try {
             const store =
@@ -336,11 +275,13 @@
                     "put",
                     "patch",
                     "del"
-                ) ||
-                findByProps("get")
+                ) || findByProps("get")
             );
         } catch (error) {
-            console.error("[Mobile Mod View] REST lookup", error);
+            console.error(
+                "[Mobile Mod View] REST lookup",
+                error
+            );
             return null;
         }
     }
@@ -348,16 +289,11 @@
     async function restGet(url) {
         const rest = getRest();
 
-        if (
-            !rest ||
-            typeof rest.get !== "function"
-        ) {
+        if (!rest || typeof rest.get !== "function") {
             throw new Error("Discord REST API unavailable");
         }
 
-        const response =
-            await rest.get({ url: url });
-
+        const response = await rest.get({ url: url });
         return response?.body;
     }
 
@@ -365,10 +301,7 @@
         if (!guildId || !userId) return null;
 
         return restGet(
-            "/guilds/" +
-                guildId +
-                "/members/" +
-                userId
+            "/guilds/" + guildId + "/members/" + userId
         );
     }
 
@@ -377,7 +310,7 @@
         return restGet("/guilds/" + guildId);
     }
 
-    async function fetchMessages(channelId, userId) {
+    async function fetchRecentMessages(channelId, userId) {
         if (!channelId || !userId) return [];
 
         const messages = await restGet(
@@ -393,7 +326,7 @@
                 message =>
                     message?.author?.id === userId
             )
-            .slice(0, 30);
+            .slice(0, 10);
     }
 
     function InfoRow({ label, value }) {
@@ -412,116 +345,114 @@
                     numberOfLines: 4
                 },
                 value == null || value === ""
-                    ? "Unknown"
+                    ? "Unavailable"
                     : String(value)
             )
         );
     }
 
-    function Section({
-        title,
-        children,
-        defaultOpen = true
-    }) {
-        const [open, setOpen] =
-            React.useState(defaultOpen);
-
+    function RoleCard({ role }) {
         return React.createElement(
             View,
-            { style: styles.section },
+            { style: styles.role },
             React.createElement(
-                Pressable,
-                {
-                    style: styles.sectionHeader,
-                    onPress: () =>
-                        setOpen(current => !current)
-                },
-                React.createElement(
-                    Text,
-                    { style: styles.sectionTitle },
-                    title
-                ),
-                React.createElement(
-                    Text,
-                    { style: styles.sectionArrow },
-                    open ? "⌃" : "⌄"
-                )
+                Text,
+                { style: styles.roleName },
+                role?.name || "Unknown Role"
             ),
-            open
-                ? React.createElement(
-                      View,
-                      { style: styles.sectionBody },
-                      children
-                  )
-                : null
+            React.createElement(
+                Text,
+                { style: styles.roleId },
+                "Role ID: " + (role?.id || "Unknown")
+            )
         );
     }
 
-    function ModView({ user, guildId: suppliedGuildId, onClose }) {
+    function MessageCard({ message }) {
+        const content =
+            message?.content ||
+            (message?.attachments?.length
+                ? "[Attachment / no text]"
+                : "[No text]");
+
+        return React.createElement(
+            View,
+            { style: styles.message },
+            React.createElement(
+                Text,
+                { style: styles.messageDate },
+                formatDate(message?.timestamp)
+            ),
+            React.createElement(
+                Text,
+                { style: styles.messageText },
+                content
+            )
+        );
+    }
+
+    function MobileModInfo({ user, suppliedGuildId }) {
         const guildId = getGuildId(suppliedGuildId);
         const channelId = getChannelId();
 
-        const [member, setMember] =
-            React.useState(null);
-        const [guild, setGuild] =
-            React.useState(null);
-        const [messages, setMessages] =
-            React.useState([]);
-        const [loading, setLoading] =
-            React.useState(true);
-        const [refreshing, setRefreshing] =
-            React.useState(false);
+        const [member, setMember] = React.useState(null);
+        const [guild, setGuild] = React.useState(null);
+        const [messages, setMessages] = React.useState([]);
+        const [loading, setLoading] = React.useState(true);
 
         async function load() {
             setLoading(true);
 
             try {
-                if (guildId) {
-                    const results =
-                        await Promise.allSettled([
-                            fetchMember(
-                                guildId,
-                                user?.id
-                            ),
-                            fetchGuild(guildId)
-                        ]);
+                if (guildId && user?.id) {
+                    const memberResult =
+                        await fetchMember(guildId, user.id)
+                            .catch(error => {
+                                console.error(
+                                    "[Mobile Mod View] member fetch",
+                                    error
+                                );
+                                return null;
+                            });
 
-                    if (
-                        results[0]?.status === "fulfilled"
-                    ) {
-                        setMember(
-                            results[0].value || null
-                        );
-                    }
+                    const guildResult =
+                        await fetchGuild(guildId)
+                            .catch(error => {
+                                console.error(
+                                    "[Mobile Mod View] guild fetch",
+                                    error
+                                );
+                                return null;
+                            });
 
-                    if (
-                        results[1]?.status === "fulfilled"
-                    ) {
-                        setGuild(
-                            results[1].value || null
-                        );
-                    }
+                    setMember(memberResult || null);
+                    setGuild(guildResult || null);
+                } else {
+                    setMember(null);
+                    setGuild(null);
                 }
 
                 if (channelId && user?.id) {
                     try {
-                        setMessages(
-                            await fetchMessages(
+                        const recent =
+                            await fetchRecentMessages(
                                 channelId,
                                 user.id
-                            )
-                        );
+                            );
+                        setMessages(recent);
                     } catch (error) {
                         console.error(
-                            "[Mobile Mod View] messages",
+                            "[Mobile Mod View] message fetch",
                             error
                         );
                         setMessages([]);
                     }
+                } else {
+                    setMessages([]);
                 }
             } catch (error) {
                 console.error(
-                    "[Mobile Mod View] load",
+                    "[Mobile Mod View] data load",
                     error
                 );
             } finally {
@@ -536,100 +467,80 @@
             [user?.id, guildId, channelId]
         );
 
-        const roles =
+        const roleMap = {};
+        const guildRoles =
             Array.isArray(guild?.roles)
                 ? guild.roles
                 : [];
 
-        const roleMap = {};
-
-        roles.forEach(role => {
+        guildRoles.forEach(role => {
             if (role?.id) {
-                roleMap[role.id] = role;
+                roleMap[String(role.id)] = role;
             }
         });
 
-        const memberRoles =
+        const memberRoleIds =
             Array.isArray(member?.roles)
                 ? member.roles
                 : [];
 
-        const avatar = avatarUrl(user);
+        const memberRoles = memberRoleIds
+            .map(id => roleMap[String(id)])
+            .filter(Boolean)
+            .sort((a, b) =>
+                Number(b?.position || 0) -
+                Number(a?.position || 0)
+            );
 
-        async function refresh() {
-            if (refreshing) return;
-            setRefreshing(true);
-            await load();
-            setRefreshing(false);
-        }
+        const avatar = getAvatarUrl(user);
 
         return React.createElement(
             View,
-            { style: styles.modalRoot },
+            { style: styles.container },
             React.createElement(
                 View,
-                { style: styles.modalCard },
+                { style: styles.card },
 
                 React.createElement(
                     View,
-                    { style: styles.modalHeader },
+                    { style: styles.cardHeader },
                     React.createElement(
                         Text,
-                        {
-                            style: styles.modalTitle,
-                            numberOfLines: 1
-                        },
-                        "Mobile Mod View"
+                        { style: styles.cardTitle },
+                        "Moderator Information"
                     ),
                     React.createElement(
-                        Pressable,
-                        {
-                            onPress: onClose,
-                            accessibilityRole: "button",
-                            accessibilityLabel: "Close Mod View"
-                        },
-                        React.createElement(
-                            Text,
-                            { style: styles.closeText },
-                            "Close"
-                        )
+                        View,
+                        { style: styles.liveDot }
+                    ),
+                    React.createElement(
+                        Text,
+                        { style: styles.liveText },
+                        "READ ONLY"
                     )
                 ),
 
                 React.createElement(
-                    ScrollView,
-                    {
-                        contentContainerStyle:
-                            styles.content
-                    },
-
+                    View,
+                    { style: styles.profile },
+                    avatar
+                        ? React.createElement(Image, {
+                              source: { uri: avatar },
+                              style: styles.profileAvatar
+                          })
+                        : React.createElement(View, {
+                              style: styles.profileAvatar
+                          }),
                     React.createElement(
                         View,
-                        { style: styles.header },
-
-                        avatar
-                            ? React.createElement(
-                                  Image,
-                                  {
-                                      source: {
-                                          uri: avatar
-                                      },
-                                      style: styles.avatar
-                                  }
-                              )
-                            : React.createElement(
-                                  View,
-                                  {
-                                      style: styles.avatar
-                                  }
-                              ),
-
+                        { style: styles.profileText },
                         React.createElement(
                             Text,
-                            { style: styles.name },
-                            safeName(user)
+                            { style: styles.displayName },
+                            user?.global_name ||
+                                user?.username ||
+                                "Unknown User"
                         ),
-
                         React.createElement(
                             Text,
                             { style: styles.username },
@@ -637,368 +548,156 @@
                                 ? "@" + user.username
                                 : "Unknown"
                         )
-                    ),
+                    )
+                ),
 
+                React.createElement(
+                    View,
+                    { style: styles.section },
                     React.createElement(
-                        Section,
-                        {
-                            title: "User Information"
-                        },
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "User ID",
-                                value: user?.id
-                            }
-                        ),
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "Username",
-                                value: user?.username
-                            }
-                        ),
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "Display Name",
-                                value:
-                                    user?.global_name ||
-                                    user?.username
-                            }
-                        ),
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "Account Created",
-                                value:
-                                    accountCreated(
-                                        user?.id
-                                    )
-                            }
-                        ),
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "Bot",
-                                value: user?.bot
-                                    ? "Yes"
-                                    : "No"
-                            }
-                        ),
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "System Account",
-                                value: user?.system
-                                    ? "Yes"
-                                    : "No"
-                            }
-                        )
+                        Text,
+                        { style: styles.sectionTitle },
+                        "USER INFORMATION"
                     ),
+                    React.createElement(InfoRow, {
+                        label: "Username",
+                        value: user?.username
+                    }),
+                    React.createElement(InfoRow, {
+                        label: "Display Name",
+                        value:
+                            user?.global_name ||
+                            user?.username
+                    }),
+                    React.createElement(InfoRow, {
+                        label: "User ID",
+                        value: user?.id
+                    }),
+                    React.createElement(InfoRow, {
+                        label: "Account Created",
+                        value: getAccountCreated(user?.id)
+                    })
+                ),
 
+                React.createElement(
+                    View,
+                    { style: styles.section },
                     React.createElement(
-                        Section,
-                        {
-                            title: "Server Information"
-                        },
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "Server",
-                                value: guild?.name
-                            }
-                        ),
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "Server ID",
-                                value: guildId
-                            }
-                        ),
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "Nickname",
-                                value:
-                                    member?.nick ||
-                                    "None"
-                            }
-                        ),
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "Joined Server",
-                                value: formatDate(
-                                    member?.joined_at
-                                )
-                            }
-                        )
+                        Text,
+                        { style: styles.sectionTitle },
+                        "SERVER INFORMATION"
                     ),
+                    React.createElement(InfoRow, {
+                        label: "Server ID",
+                        value: guildId
+                    }),
+                    React.createElement(InfoRow, {
+                        label: "Server Name",
+                        value: guild?.name
+                    }),
+                    React.createElement(InfoRow, {
+                        label: "Nickname",
+                        value: member?.nick || "None"
+                    }),
+                    React.createElement(InfoRow, {
+                        label: "Joined Server",
+                        value: formatDate(member?.joined_at)
+                    })
+                ),
 
+                React.createElement(
+                    View,
+                    { style: styles.section },
                     React.createElement(
-                        Section,
-                        {
-                            title:
-                                "Roles (" +
-                                memberRoles.length +
-                                ")"
-                        },
-
-                        memberRoles.length
-                            ? React.createElement(
-                                  View,
-                                  {
-                                      style:
-                                          styles.roleWrap
-                                  },
-                                  memberRoles.map(
-                                      roleId => {
-                                          const role =
-                                              roleMap[
-                                                  roleId
-                                              ];
-
-                                          if (!role) {
-                                              return null;
-                                          }
-
-                                          return React.createElement(
-                                              View,
-                                              {
-                                                  key:
-                                                      role.id,
-                                                  style:
-                                                      styles.role
-                                              },
-                                              React.createElement(
-                                                  Text,
-                                                  {
-                                                      style:
-                                                          styles.roleText
-                                                  },
-                                                  role.name
-                                              )
-                                          );
+                        Text,
+                        { style: styles.sectionTitle },
+                        "ROLES"
+                    ),
+                    memberRoles.length
+                        ? React.createElement(
+                              View,
+                              { style: styles.roleList },
+                              memberRoles.map(role =>
+                                  React.createElement(
+                                      RoleCard,
+                                      {
+                                          key: String(role.id),
+                                          role: role
                                       }
                                   )
                               )
-                            : React.createElement(
-                                  Text,
-                                  {
-                                      style:
-                                          styles.empty
-                                  },
-                                  guildId
-                                      ? "No roles available."
-                                      : "No server selected."
-                              )
-                    ),
+                          )
+                        : React.createElement(
+                              Text,
+                              { style: styles.empty },
+                              guildId
+                                  ? "No roles available."
+                                  : "No server selected."
+                          )
+                ),
 
+                React.createElement(
+                    View,
+                    { style: styles.section },
                     React.createElement(
-                        Section,
-                        {
-                            title:
-                                "Recent Messages (" +
-                                messages.length +
-                                ")",
-                            defaultOpen: false
-                        },
-
-                        messages.length
-                            ? messages.map(
-                                  message =>
-                                      React.createElement(
-                                          View,
-                                          {
-                                              key:
-                                                  message.id,
-                                              style:
-                                                  styles.message
-                                          },
-                                          React.createElement(
-                                              Text,
-                                              {
-                                                  style:
-                                                      styles.messageDate
-                                              },
-                                              formatDate(
-                                                  message.timestamp
-                                              )
-                                          ),
-                                          React.createElement(
-                                              Text,
-                                              {
-                                                  style:
-                                                      styles.messageText
-                                              },
-                                              message.content ||
-                                                  "[No text / attachment]"
-                                          )
-                                      )
-                              )
-                            : React.createElement(
-                                  Text,
-                                  {
-                                      style: styles.empty
-                                  },
-                                  channelId
-                                      ? "No recent messages found."
-                                      : "No channel selected."
-                              )
+                        Text,
+                        { style: styles.sectionTitle },
+                        "RECENT MESSAGES"
                     ),
-
-                    React.createElement(
-                        Section,
-                        {
-                            title: "Status",
-                            defaultOpen: false
-                        },
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "Member data",
-                                value:
-                                    member
-                                        ? "Loaded"
-                                        : "Unavailable"
-                            }
-                        ),
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "Server data",
-                                value:
-                                    guild
-                                        ? "Loaded"
-                                        : "Unavailable"
-                            }
-                        ),
-
-                        React.createElement(
-                            InfoRow,
-                            {
-                                label: "Message data",
-                                value:
-                                    messages.length
-                                        ? "Loaded"
-                                        : "Unavailable"
-                            }
-                        )
-                    ),
-
                     loading
                         ? React.createElement(
                               View,
                               { style: styles.loading },
                               ActivityIndicator
                                   ? React.createElement(
-                                        ActivityIndicator
+                                        ActivityIndicator,
+                                        { size: "small" }
                                     )
                                   : null,
                               React.createElement(
                                   Text,
-                                  {
-                                      style:
-                                          styles.empty
-                                  },
-                                  "Loading information..."
+                                  { style: styles.empty },
+                                  "Loading..."
                               )
                           )
-                        : null,
-
-                    React.createElement(
-                        Pressable,
-                        {
-                            style: styles.refresh,
-                            onPress: refresh,
-                            disabled: refreshing
-                        },
-                        React.createElement(
-                            Text,
-                            {
-                                style:
-                                    styles.refreshText
-                            },
-                            refreshing
-                                ? "Refreshing..."
-                                : "Refresh"
-                        )
-                    )
+                        : messages.length
+                        ? React.createElement(
+                              ScrollView,
+                              {
+                                  style: {
+                                      maxHeight: 420
+                                  },
+                                  nestedScrollEnabled: true
+                              },
+                              React.createElement(
+                                  View,
+                                  { style: styles.messageList },
+                                  messages.map(message =>
+                                      React.createElement(
+                                          MessageCard,
+                                          {
+                                              key: String(
+                                                  message.id
+                                              ),
+                                              message: message
+                                          }
+                                      )
+                                  )
+                              )
+                          )
+                        : React.createElement(
+                              Text,
+                              { style: styles.empty },
+                              channelId
+                                  ? "No recent messages from this user in this channel."
+                                  : "No channel selected."
+                          )
                 )
             )
         );
     }
 
-    function ModButton({ user, guildId }) {
-        const [visible, setVisible] =
-            React.useState(false);
-
-        return React.createElement(
-            View,
-            {
-                style: {
-                    alignItems: "center",
-                    width: "100%"
-                }
-            },
-
-            React.createElement(
-                Pressable,
-                {
-                    style: styles.profileButton,
-                    onPress: () => setVisible(true),
-                    accessibilityRole: "button",
-                    accessibilityLabel:
-                        "Open Mobile Mod View"
-                },
-                React.createElement(
-                    Text,
-                    {
-                        style:
-                            styles.profileButtonText
-                    },
-                    "🛡️ Mod View"
-                )
-            ),
-
-            Modal
-                ? React.createElement(
-                      Modal,
-                      {
-                          visible: visible,
-                          transparent: true,
-                          animationType: "fade",
-                          onRequestClose: () =>
-                              setVisible(false)
-                      },
-                      React.createElement(
-                          ModView,
-                          {
-                              user: user,
-                              guildId: guildId,
-                              onClose: () =>
-                                  setVisible(false)
-                          }
-                      )
-                  )
-                : null
-        );
-    }
-
-    function patchHeaderAvatar() {
+    function patchProfile() {
         if (
             typeof findByName !== "function" ||
             typeof after !== "function"
@@ -1009,8 +708,10 @@
         let HeaderAvatar = null;
 
         try {
-            HeaderAvatar =
-                findByName("HeaderAvatar", false);
+            HeaderAvatar = findByName(
+                "HeaderAvatar",
+                false
+            );
         } catch (error) {
             console.error(
                 "[Mobile Mod View] HeaderAvatar lookup",
@@ -1018,9 +719,7 @@
             );
         }
 
-        if (!HeaderAvatar) {
-            return false;
-        }
+        if (!HeaderAvatar) return false;
 
         try {
             const unpatch = after(
@@ -1031,10 +730,7 @@
                         const props = args?.[0];
                         const user = props?.user;
 
-                        if (
-                            !user?.id ||
-                            !result
-                        ) {
+                        if (!user?.id || !result) {
                             return result;
                         }
 
@@ -1042,24 +738,23 @@
                             View,
                             {
                                 style: {
-                                    alignItems:
-                                        "center",
-                                    width: "100%"
+                                    width: "100%",
+                                    alignItems: "center"
                                 }
                             },
                             result,
                             React.createElement(
-                                ModButton,
+                                MobileModInfo,
                                 {
                                     user: user,
-                                    guildId:
+                                    suppliedGuildId:
                                         props?.guildId
                                 }
                             )
                         );
                     } catch (error) {
                         console.error(
-                            "[Mobile Mod View] render patch",
+                            "[Mobile Mod View] render",
                             error
                         );
                         return result;
@@ -1084,18 +779,16 @@
     function start() {
         try {
             if (!React || !RN || !StyleSheet) {
-                showToast(
-                    "Mobile Mod View: React API unavailable"
+                console.error(
+                    "[Mobile Mod View] React/ReactNative unavailable"
                 );
                 return;
             }
 
-            if (patchHeaderAvatar()) {
-                showToast(
-                    "Mobile Mod View enabled"
-                );
+            if (patchProfile()) {
+                toast("Mobile Mod View enabled");
             } else {
-                showToast(
+                toast(
                     "Mobile Mod View: profile component not found"
                 );
             }
@@ -1104,18 +797,13 @@
                 "[Mobile Mod View] start",
                 error
             );
-            showToast(
-                "Mobile Mod View failed to start"
-            );
         }
     }
 
     function stop() {
         while (disposers.length) {
             try {
-                const dispose =
-                    disposers.pop();
-
+                const dispose = disposers.pop();
                 if (typeof dispose === "function") {
                     dispose();
                 }
@@ -1133,13 +821,9 @@
         onUnload: stop
     };
 
-    Object.defineProperty(
-        p,
-        "__esModule",
-        {
-            value: true
-        }
-    );
+    Object.defineProperty(p, "__esModule", {
+        value: true
+    });
 
     return p;
 })(
